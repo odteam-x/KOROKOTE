@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta — Sistema de gestión para balneario</title>
+<meta name="description" content="Propuesta de sistema de taquilla, cuentas abiertas, inventario y control de costos para balneario.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#07272E;
+  --ink-2:#0E3D46;
+  --ink-3:#134B56;
+  --paper:#F4F6F4;
+  --paper-2:#E6EDEA;
+  --tile:#17808C;
+  --tile-deep:#0E5A64;
+  --aqua:#45C4C9;
+  --sun:#F0A93B;
+  --brick:#C2543B;
+  --txt:#0B2229;
+  --txt-2:#4A6068;
+  --line:#CBD8D6;
+  --line-dark:rgba(69,196,201,.22);
+
+  --fd:'Bricolage Grotesque',serif;
+  --fb:'DM Sans',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+
+  --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem;
+  --s6:2rem; --s7:3rem; --s8:4.5rem; --s9:7rem;
+  --r:10px; --rl:20px;
+  --wrap:1120px;
+  --t:180ms cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:76px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);color:var(--txt);
+  font-family:var(--fb);font-size:clamp(1rem,.97rem + .18vw,1.075rem);
+  line-height:1.65;font-weight:400;overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:var(--fd);line-height:1.06;letter-spacing:-.025em;font-weight:700}
+h2{font-size:clamp(1.9rem,1.3rem + 2.6vw,3.1rem)}
+h3{font-size:clamp(1.25rem,1.05rem + .8vw,1.6rem);line-height:1.2}
+h4{font-size:1.02rem;line-height:1.3;letter-spacing:-.01em}
+p{max-width:66ch}
+a{color:inherit}
+strong{font-weight:700;color:var(--ink)}
+
+.wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:clamp(1.1rem,5vw,2.5rem)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-999px;top:0;z-index:200;background:var(--ink);color:var(--paper);padding:.7rem 1.1rem}
+.skip:focus{left:0}
+:focus-visible{outline:3px solid var(--sun);outline-offset:3px;border-radius:3px}
+
+/* ---------- pool tile motif (signature) ---------- */
+.tiles{
+  background-image:
+    linear-gradient(to right,var(--line-dark) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--line-dark) 1px,transparent 1px);
+  background-size:34px 34px;
+}
+
+/* ---------- nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(7,39,46,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(69,196,201,.25);
+}
+.nav__in{display:flex;align-items:center;gap:var(--s5);min-height:64px}
+.nav__brand{
+  font-family:var(--fm);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--aqua);white-space:nowrap;font-weight:700;
+}
+.nav__links{
+  display:flex;gap:.15rem;overflow-x:auto;scrollbar-width:none;margin-left:auto;
+}
+.nav__links::-webkit-scrollbar{display:none}
+.nav__links a{
+  font-size:.83rem;color:#B8CDD2;text-decoration:none;white-space:nowrap;
+  padding:.55rem .7rem;border-radius:var(--r);transition:var(--t);font-weight:500;
+}
+.nav__links a:hover{color:var(--paper);background:rgba(69,196,201,.14)}
+.nav__links a.on{color:var(--ink);background:var(--aqua);font-weight:700}
+
+/* ---------- hero ---------- */
+.hero{background:var(--ink);color:var(--paper);position:relative;overflow:hidden}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 70% at 78% 0%,rgba(69,196,201,.20),transparent 60%);
+}
+.hero__in{position:relative;z-index:1;padding-block:clamp(3.2rem,9vw,6rem) clamp(3rem,8vw,5rem)}
+.eyebrow{
+  font-family:var(--fm);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--aqua);display:block;margin-bottom:var(--s5);
+}
+.hero h1{
+  font-size:clamp(2.5rem,1.4rem + 5.2vw,5.1rem);font-weight:800;
+  max-width:16ch;color:#fff;
+}
+.hero h1 em{font-style:normal;color:var(--aqua)}
+.hero__lead{
+  margin-top:var(--s5);font-size:clamp(1.05rem,1rem + .5vw,1.3rem);
+  color:#C6DADE;max-width:56ch;
+}
+.hero__meta{
+  margin-top:var(--s7);display:grid;gap:var(--s4);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  border-top:1px solid rgba(69,196,201,.28);padding-top:var(--s5);
+}
+.hero__meta div span{
+  display:block;font-family:var(--fm);font-size:.65rem;letter-spacing:.16em;
+  text-transform:uppercase;color:#7FA5AC;margin-bottom:.3rem;
+}
+.hero__meta div b{font-family:var(--fd);font-size:1.12rem;color:#fff;font-weight:700}
+
+/* ---------- sections ---------- */
+section{padding-block:clamp(3.2rem,7vw,5.5rem);border-top:1px solid var(--line)}
+section.dark{background:var(--ink);color:#D3E3E6;border-top:none}
+section.dark h2,section.dark h3,section.dark h4{color:#fff}
+section.dark strong{color:var(--aqua)}
+section.alt{background:var(--paper-2)}
+.shead{margin-bottom:var(--s6);max-width:70ch}
+.shead .eyebrow{color:var(--tile-deep)}
+section.dark .shead .eyebrow{color:var(--aqua)}
+.shead p{margin-top:var(--s4);color:var(--txt-2);font-size:1.06rem}
+section.dark .shead p{color:#A8C3C8}
+
+/* ---------- generic bits ---------- */
+.grid{display:grid;gap:var(--s4)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:var(--s5);transition:var(--t);
+}
+section.alt .card{background:#fff}
+.card:hover{border-color:var(--tile);transform:translateY(-2px)}
+.card h4{margin-bottom:var(--s2);color:var(--ink)}
+.card p{font-size:.94rem;color:var(--txt-2)}
+.num{
+  font-family:var(--fm);font-size:.68rem;color:var(--tile);
+  letter-spacing:.12em;display:block;margin-bottom:var(--s3);font-weight:700;
+}
+.chip{
+  display:inline-block;font-family:var(--fm);font-size:.66rem;letter-spacing:.08em;
+  text-transform:uppercase;padding:.25rem .55rem;border-radius:999px;font-weight:700;
+}
+.chip--f1{background:var(--aqua);color:var(--ink)}
+.chip--f2{background:var(--sun);color:#3A2405}
+.chip--f3{background:var(--paper-2);color:var(--txt-2);border:1px solid var(--line)}
+.chip--no{background:#F3DDD8;color:#7C2E1C}
+code,.mono{font-family:var(--fm);font-size:.86em}
+
+/* ---------- recorrido (stepper) ---------- */
+.flow{display:grid;gap:var(--s2);grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:var(--s5)}
+.flow button{
+  font:inherit;font-family:var(--fm);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;border:1px solid rgba(69,196,201,.3);color:#9FBFC5;
+  padding:.85rem .7rem;border-radius:var(--r);cursor:pointer;transition:var(--t);
+  text-align:left;font-weight:700;
+}
+.flow button b{display:block;font-family:var(--fm);font-size:.62rem;color:var(--aqua);margin-bottom:.25rem}
+.flow button:hover{border-color:var(--aqua);color:#fff}
+.flow button[aria-selected="true"]{background:var(--aqua);color:var(--ink);border-color:var(--aqua)}
+.flow button[aria-selected="true"] b{color:var(--ink-2)}
+.panel{
+  border:1px solid rgba(69,196,201,.28);border-radius:var(--rl);padding:clamp(1.3rem,3.5vw,2.2rem);
+  background:rgba(69,196,201,.06);
+}
+.panel[hidden]{display:none}
+.panel h3{margin-bottom:var(--s3)}
+.panel p{color:#B7D0D4}
+.panel ul{margin-top:var(--s4);padding-left:1.1rem;display:grid;gap:.5rem}
+.panel li{color:#B7D0D4;font-size:.95rem}
+.panel li strong{color:#fff}
+
+/* ---------- estados ---------- */
+.states{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:stretch;margin-top:var(--s5)}
+.state{
+  flex:1 1 140px;background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:var(--s4);position:relative;
+}
+.state span{
+  font-family:var(--fm);font-size:.62rem;letter-spacing:.1em;color:var(--tile);
+  display:block;margin-bottom:.4rem;font-weight:700;
+}
+.state b{font-family:var(--fd);font-size:1.05rem;display:block;margin-bottom:.35rem;color:var(--ink)}
+.state p{font-size:.86rem;color:var(--txt-2)}
+.state.hl{border-color:var(--sun);border-width:2px;background:#FFF9EF}
+
+/* ---------- calculadora ---------- */
+.calc{
+  display:grid;gap:var(--s5);grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  background:#fff;border:1px solid var(--line);border-radius:var(--rl);
+  padding:clamp(1.3rem,3.5vw,2.2rem);
+}
+.field{margin-bottom:var(--s4)}
+.field label{
+  display:block;font-family:var(--fm);font-size:.68rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--txt-2);margin-bottom:.45rem;font-weight:700;
+}
+.field input[type=number]{
+  width:100%;font:inherit;font-family:var(--fm);font-size:1.15rem;font-weight:700;
+  padding:.7rem .85rem;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--paper);color:var(--ink);
+}
+.field input:focus{border-color:var(--tile);background:#fff}
+.seg{display:flex;gap:.3rem;background:var(--paper-2);padding:.25rem;border-radius:var(--r)}
+.seg button{
+  flex:1;font:inherit;font-family:var(--fm);font-size:.72rem;font-weight:700;letter-spacing:.05em;
+  padding:.55rem .4rem;border:none;background:transparent;border-radius:7px;
+  cursor:pointer;color:var(--txt-2);transition:var(--t);
+}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.toggle{display:flex;align-items:center;gap:.6rem;font-size:.92rem;cursor:pointer;user-select:none}
+.toggle input{width:1.15rem;height:1.15rem;accent-color:var(--tile);cursor:pointer}
+.out{background:var(--ink);border-radius:var(--r);padding:var(--s5);color:#C6DADE}
+.out .row{
+  display:flex;justify-content:space-between;gap:var(--s4);align-items:baseline;
+  padding:.5rem 0;border-bottom:1px solid rgba(69,196,201,.16);font-size:.94rem;
+}
+.out .row:last-of-type{border:none}
+.out .row span{color:#9FBFC5}
+.out .row b{font-family:var(--fm);font-weight:700;color:#fff}
+.out .row.total{margin-top:var(--s3);padding-top:var(--s4);border-top:2px solid var(--aqua);border-bottom:none}
+.out .row.total span{color:#fff;font-family:var(--fd);font-size:1.1rem;font-weight:700}
+.out .row.total b{color:var(--aqua);font-size:1.5rem;font-family:var(--fd)}
+.out .note{margin-top:var(--s4);font-size:.8rem;color:#7FA5AC;line-height:1.5}
+
+/* ---------- tabla ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--line);font-size:.92rem;vertical-align:top}
+th{
+  font-family:var(--fm);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--tile-deep);background:var(--paper-2);font-weight:700;
+}
+tr:last-child td{border-bottom:none}
+td b{color:var(--ink)}
+
+/* ---------- listas ---------- */
+.ticks{display:grid;gap:.65rem;list-style:none}
+.ticks li{padding-left:1.7rem;position:relative;font-size:.96rem}
+.ticks li::before{
+  content:"";position:absolute;left:0;top:.55em;width:9px;height:9px;
+  background:var(--aqua);border-radius:2px;
+}
+.ticks.no li::before{background:var(--brick);opacity:.55}
+section.dark .ticks li{color:#B7D0D4}
+
+/* ---------- fases ---------- */
+.phase{
+  background:#fff;border:1px solid var(--line);border-left:4px solid var(--aqua);
+  border-radius:var(--r);padding:var(--s5);
+}
+.phase--2{border-left-color:var(--sun)}
+.phase--3{border-left-color:var(--line)}
+.phase h4{margin:.6rem 0 var(--s3)}
+.phase ul{list-style:none;display:grid;gap:.45rem}
+.phase li{font-size:.9rem;color:var(--txt-2);padding-left:1rem;position:relative}
+.phase li::before{content:"—";position:absolute;left:0;color:var(--tile)}
+
+/* ---------- callout ---------- */
+.callout{
+  border:1px solid var(--sun);background:#FFF8EE;border-radius:var(--r);
+  padding:var(--s5);margin-top:var(--s5);
+}
+.callout h4{color:#8A5A0B;margin-bottom:var(--s2)}
+.callout p{font-size:.94rem;color:#6B4A12}
+section.dark .callout{background:rgba(240,169,59,.1);border-color:rgba(240,169,59,.5)}
+section.dark .callout h4{color:var(--sun)}
+section.dark .callout p{color:#E0CBA8}
+
+.blank{
+  border:1px dashed var(--line);border-radius:var(--r);padding:var(--s5);
+  background:repeating-linear-gradient(45deg,transparent,transparent 9px,rgba(23,128,140,.045) 9px,rgba(23,128,140,.045) 18px);
+}
+.blank .mono{color:var(--tile-deep);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.blank p{margin-top:.5rem;color:var(--txt-2);font-size:.92rem}
+
+/* ---------- footer ---------- */
+footer{background:var(--ink);color:#8FB2B8;padding-block:var(--s7);border-top:1px solid rgba(69,196,201,.25)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:var(--s5);justify-content:space-between;align-items:flex-end}
+footer p{font-size:.86rem;max-width:44ch}
+footer .mono{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--aqua);font-weight:700}
+
+/* ---------- motion ---------- */
+[data-anim]{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+[data-anim].in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  [data-anim]{opacity:1;transform:none}
+}
+@media print{
+  .nav,.flow{display:none}
+  body{background:#fff}
+  section,.hero{page-break-inside:avoid;border-color:#ccc}
+  .hero,section.dark{background:#fff!important;color:#000!important}
+  section.dark h2,section.dark h3,section.dark h4,.hero h1{color:#000!important}
+  .panel[hidden]{display:block!important}
+  .out{background:#f4f4f4;color:#000}
+}
+@media (max-width:640px){
+  .nav__in{min-height:56px;gap:var(--s3)}
+  .nav__brand{font-size:.62rem}
+}
+</style>
+</head>
+<body class="tiles" style="background-color:var(--paper)">
+<a class="skip" href="#main">Ir al contenido</a>
+
+<nav class="nav" aria-label="Secciones de la propuesta">
+  <div class="wrap nav__in">
+    <span class="nav__brand">Propuesta&nbsp;· Sistema</span>
+    <div class="nav__links">
+      <a href="#problema">El problema</a>
+      <a href="#recorrido">El día a día</a>
+      <a href="#pantallas">Pantallas</a>
+      <a href="#precios">Precios y descuentos</a>
+      <a href="#inventario">Inventario</a>
+      <a href="#reportes">Reportes</a>
+      <a href="#fases">Fases</a>
+      <a href="#alcance">Alcance</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero tiles">
+  <div class="wrap hero__in">
+    <span class="eyebrow">Propuesta de desarrollo</span>
+    <h1>Un sistema hecho para <em>cómo trabaja la piscina</em>, no para un restaurante.</h1>
+    <p class="hero__lead">Taquilla, cuentas abiertas por mesa, pantalla de pedidos en la barra, inventario que se cuenta por botellas y reportes que dicen a dónde se va el dinero.</p>
+    <div class="hero__meta">
+      <div><span>Cliente</span><b>[Nombre del negocio]</b></div>
+      <div><span>Preparado por</span><b>Oscar Núñez | ODTeam-X</b></div>
+      <div><span>Fecha</span><b>[Fecha]</b></div>
+      <div><span>Validez</span><b>[30 días]</b></div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============ PROBLEMA ============ -->
+<section id="problema" class="alt">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Por qué</span>
+      <h2>Lo que hoy no se puede saber</h2>
+      <p>El sistema no se justifica por facturar más rápido. Se justifica porque hoy hay tres preguntas que el negocio no puede responder con certeza, y las tres cuestan dinero todos los días.</p>
+    </div>
+    <div class="grid g3">
+      <article class="card" data-anim>
+        <span class="num">01</span>
+        <h4>¿Cuántas botellas faltan?</h4>
+        <p>Sin conteo por turno, un faltante se descubre semanas después y ya no se puede atribuir a nadie. La pérdida se vuelve un costo fijo invisible.</p>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">02</span>
+        <h4>¿Cuánto gasta cada visitante?</h4>
+        <p>Se sabe cuánta gente entró y cuánto entró en caja, pero no cuánto consume en promedio un visitante ni qué días eso sube o baja.</p>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">03</span>
+        <h4>¿Qué se anuló y quién lo anuló?</h4>
+        <p>Un pedido que se borra de la cuenta después de haberse servido no deja rastro. Ese hueco es por donde se va la mercancía en cualquier barra.</p>
+      </article>
+    </div>
+    <div class="callout" data-anim>
+      <h4>El sistema responde las tres sin trabajo extra del personal</h4>
+      <p>No se le pide a nadie que llene un formulario aparte. Los datos salen del mismo flujo que ya hacen: abrir la cuenta, mandar el pedido, cobrar y cerrar caja.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RECORRIDO ============ -->
+<section id="recorrido" class="dark tiles">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Cómo funciona</span>
+      <h2>Un domingo, paso a paso</h2>
+      <p>La forma más rápida de entender el sistema es seguir a un cliente desde que paga la entrada hasta que la caja cierra.</p>
+    </div>
+
+    <div class="flow" role="tablist" aria-label="Etapas del día">
+      <button role="tab" id="t1" aria-controls="p1" aria-selected="true"><b>Paso 1</b>Entrada</button>
+      <button role="tab" id="t2" aria-controls="p2" aria-selected="false"><b>Paso 2</b>Abrir cuenta</button>
+      <button role="tab" id="t3" aria-controls="p3" aria-selected="false"><b>Paso 3</b>El pedido</button>
+      <button role="tab" id="t4" aria-controls="p4" aria-selected="false"><b>Paso 4</b>Cobrar</button>
+      <button role="tab" id="t5" aria-controls="p5" aria-selected="false"><b>Paso 5</b>Cerrar</button>
+    </div>
+
+    <div class="panel" id="p1" role="tabpanel" aria-labelledby="t1">
+      <h3>Taquilla: tres toques y sigue la fila</h3>
+      <p>El cajero toca el tipo de entrada, la cantidad y cobra. Nada más. No se registra al cliente, no se escanea nada, no se lleva conteo de quién entró y quién salió.</p>
+      <ul>
+        <li>El <strong>sintillo físico</strong> se sigue usando igual que hoy: prueba que la persona pagó y lo verifica el personal a la vista.</li>
+        <li>Las <strong>cortesías se registran aparte</strong>, con motivo y con quién las autorizó. Es lo único que hay que vigilar en taquilla.</li>
+        <li>Objetivo: menos de 5 segundos por transacción, porque en domingo se forma fila.</li>
+      </ul>
+    </div>
+
+    <div class="panel" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+      <h3>La mesera abre la cuenta en la mesa</h3>
+      <p>Una cuenta se identifica por mesa y mesera. No hace falta pedirle datos a nadie: la gente va a la piscina a desconectarse.</p>
+      <ul>
+        <li>La mesera puede ponerle un <strong>apodo libre</strong> para reconocerla: "sombrilla azul", "los de la neverita". Se borra al cerrar el día.</li>
+        <li>Si el cliente es de los que vienen seguido, la mesera puede <strong>guardarlo con un botón</strong>: nombre o apodo y teléfono opcional. Nada más — ni cédula, ni dirección, ni correo.</li>
+        <li>Se indica <strong>cuántas personas</strong> hay en la mesa, por si al final quieren dividir la cuenta.</li>
+      </ul>
+    </div>
+
+    <div class="panel" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+      <h3>El pedido aparece en la barra al instante</h3>
+      <p>La mesera manda el pedido desde la mesa. En la pantalla fija de la barra aparece de inmediato, con la mesa, el nombre de la mesera y un cronómetro corriendo.</p>
+      <ul>
+        <li>El barman ya lo va preparando. <strong>Cuando la mesera llega, está listo.</strong></li>
+        <li>Para una cerveza no hay pasos intermedios: <strong>un solo toque</strong> y queda entregada.</li>
+        <li>Modo <strong>consolidado</strong>: si hay 6 cervezas pendientes de mesas distintas, la pantalla las agrupa y el barman las saca de una sola vez.</li>
+        <li>Si el cliente <strong>cambia de opinión o pidió mal</strong>, la mesera edita la línea. Se puede corregir siempre; lo que no se puede es borrar sin dejar rastro.</li>
+      </ul>
+    </div>
+
+    <div class="panel" id="p4" role="tabpanel" aria-labelledby="t4" hidden>
+      <h3>El cliente ve su cuenta cuando quiera</h3>
+      <p>La mesera gira el equipo y le muestra la cuenta al cliente: qué lleva consumido, el descuento si lo hay, el ITBIS, la propina y el total. Sin botones que el cliente pueda tocar por error.</p>
+      <ul>
+        <li>Se puede <strong>dividir entre varias personas</strong>: por lo que pidió cada quien, compartiendo líneas, o en partes iguales.</li>
+        <li>Uno se puede ir temprano, <strong>pagar lo suyo, y la cuenta sigue abierta</strong> para los demás.</li>
+        <li>Se acepta efectivo, tarjeta y transferencia en la misma cuenta.</li>
+      </ul>
+    </div>
+
+    <div class="panel" id="p5" role="tabpanel" aria-labelledby="t5" hidden>
+      <h3>Cierre de turno: la caja cuadra o no cierra</h3>
+      <p>Al final del turno el cajero cuenta el efectivo y el sistema compara contra lo que debería haber, desglosado por método de pago.</p>
+      <ul>
+        <li><strong>No se puede cerrar el turno con cuentas abiertas.</strong> El sistema las lista y bloquea. Esta sola regla resuelve la mitad de los descuadres.</li>
+        <li>Se cuenta la nevera de la barra. Toma dos minutos porque son botellas enteras, y cualquier faltante queda acotado a ese turno y a esas personas.</li>
+        <li>Sale el reporte del día: entradas vendidas, ventas de barra, pérdidas registradas y diferencia de caja.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLAS ============ -->
+<section id="pantallas">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Lo que se construye</span>
+      <h2>Las cuatro pantallas que hacen el trabajo</h2>
+    </div>
+    <div class="grid g2">
+      <article class="card" data-anim>
+        <span class="num">Terminal de taquilla</span>
+        <h4>Venta de entradas</h4>
+        <p>Botones grandes por tipo de entrada, cantidad y cobro. Cortesías con motivo y autorización. Es la pantalla más simple del sistema y la de mayor volumen.</p>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">Equipo de la mesera</span>
+        <h4>Cuentas y pedidos</h4>
+        <p>Mapa de mesas, cuenta abierta, catálogo de bebidas y snacks, edición de líneas, división por persona y vista para mostrarle el total al cliente.</p>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">Pantalla fija en la barra</span>
+        <h4>Pedidos pendientes</h4>
+        <p>Tres columnas: solicitados, en preparación, listos. Cronómetro por pedido, alerta sonora al entrar uno nuevo, y al lado la lista de cuentas abiertas con su monto.</p>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">Panel de administración</span>
+        <h4>Inventario, caja y reportes</h4>
+        <p>Compras, conteo de existencias, registro de pérdidas, cierre de caja, y todas las gráficas de ventas, costos y desempeño.</p>
+      </article>
+    </div>
+
+    <h3 style="margin-top:3rem" data-anim>Los estados de un pedido</h3>
+    <p style="margin-top:.6rem;color:var(--txt-2)" data-anim>Cada pedido pasa por estos estados. Para una bebida embotellada el flujo real es un solo toque.</p>
+    <div class="states" data-anim>
+      <div class="state"><span>01</span><b>Borrador</b><p>La mesera está armando el pedido. Todavía no lo ve nadie.</p></div>
+      <div class="state hl"><span>02</span><b>Solicitado</b><p>Aparece en la barra y descuenta del inventario.</p></div>
+      <div class="state"><span>03</span><b>En preparación</b><p>Solo para servicio de botella o hookah. Una cerveza se salta este paso.</p></div>
+      <div class="state"><span>04</span><b>Listo</b><p>Esperando que la mesera lo recoja.</p></div>
+      <div class="state hl"><span>05</span><b>Entregado</b><p>En manos del cliente. Cierra el ciclo.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRECIOS Y DESCUENTOS ============ -->
+<section id="precios" class="alt">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Cómo se calcula</span>
+      <h2>Precios con ITBIS incluido y descuentos por monto</h2>
+      <p>Los precios se registran como el cliente los ve. El sistema deduce el ITBIS solo. Y un descuento se puede poner en porcentaje o en pesos, indistintamente.</p>
+    </div>
+
+    <div class="calc" data-anim>
+      <div>
+        <div class="field">
+          <label for="precio">Precio de venta al cliente (RD$)</label>
+          <input type="number" id="precio" value="200" min="0" step="1" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="cant">Cantidad</label>
+          <input type="number" id="cant" value="3" min="1" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label id="lblmodo">Descuento</label>
+          <div class="seg" role="group" aria-labelledby="lblmodo">
+            <button type="button" id="mPct" aria-pressed="true">Porcentaje</button>
+            <button type="button" id="mMonto" aria-pressed="false">Monto RD$</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="desc"><span id="lblDesc">Descuento en %</span></label>
+          <input type="number" id="desc" value="0" min="0" step="1" inputmode="decimal">
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="prop" checked>
+          <span>Aplicar propina legal 10%</span>
+        </label>
+      </div>
+
+      <div class="out" aria-live="polite">
+        <div class="row"><span>Precio de carta × cantidad</span><b id="oBruto">—</b></div>
+        <div class="row"><span>Descuento aplicado</span><b id="oDesc">—</b></div>
+        <div class="row"><span>Equivale a</span><b id="oEquiv">—</b></div>
+        <div class="row"><span>Precio base (sin impuesto)</span><b id="oBase">—</b></div>
+        <div class="row"><span>ITBIS 18%</span><b id="oItbis">—</b></div>
+        <div class="row"><span>Propina legal 10%</span><b id="oProp">—</b></div>
+        <div class="row total"><span>Total a pagar</span><b id="oTotal">—</b></div>
+        <p class="note" id="oNota"></p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:2rem">
+      <article class="card" data-anim>
+        <h4>El precio de carta es el que se escribe</h4>
+        <p>Se registra RD$200 y el sistema calcula que la base es 169.49 y el ITBIS 30.51. El ticket dice exactamente 200.00, nunca 199.99. Nadie tiene que andar sumando 18% a mano ni cuadrar centavos.</p>
+      </article>
+      <article class="card" data-anim>
+        <h4>"Hazle RD$500 de descuento" significa que pague 500 menos</h4>
+        <p>Al escribir un monto, el sistema lo aplica sobre el total que el cliente está viendo y muestra a cuánto porcentaje equivale. Si se aplicara sobre la base, el cliente terminaría pagando RD$640 menos sin que nadie entienda por qué.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INVENTARIO ============ -->
+<section id="inventario" class="dark tiles">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Control</span>
+      <h2>Inventario que se cuenta con los dedos</h2>
+      <p>Como no se preparan tragos, cada venta descuenta una unidad entera. Una cerveza vendida es una cerveza menos. Eso hace que el conteo sea posible todos los días, y ahí está el verdadero control.</p>
+    </div>
+
+    <div class="grid g2">
+      <div data-anim>
+        <h3>Conteo por turno, no por mes</h3>
+        <p style="margin-top:.7rem;color:#B7D0D4">Contar 87 cervezas toma dos minutos. Medir con una regla el nivel de doce botellas abiertas toma media hora y no lo hace nadie. Al ser producto cerrado, el conteo se puede hacer al cierre de cada turno.</p>
+        <p style="margin-top:.9rem;color:#B7D0D4">Cuando el conteo es diario, <strong>un faltante queda acotado a un turno y a tres o cuatro personas</strong>. Ese es el mayor salto de control que este negocio puede lograr.</p>
+      </div>
+      <div data-anim>
+        <h3>Registro de pérdidas</h3>
+        <p style="margin-top:.7rem;color:#B7D0D4">Una botella que se rompe no es un robo, pero si no se registra parece uno. El sistema tiene un botón de tres toques: artículo, cantidad, motivo.</p>
+        <ul class="ticks" style="margin-top:1rem">
+          <li>Producto dañado o inservible</li>
+          <li>Error de preparación o de pedido</li>
+          <li>Consumo del personal</li>
+          <li>Cortesía o degustación</li>
+          <li>Diferencia de inventario</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" data-anim>
+      <h4>Cada motivo va a un lugar distinto de la contabilidad</h4>
+      <p>Una botella rota es costo de ventas. Una cerveza que se tomó un empleado es gasto de personal. Una degustación es mercadeo. Salen las tres del mismo inventario, pero no dicen lo mismo del negocio, y confundirlas hace que los números no signifiquen nada.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REPORTES ============ -->
+<section id="reportes">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Qué se va a poder ver</span>
+      <h2>Reportes y gráficas</h2>
+      <p>Divididos en tres pantallas según quién los mira y cuándo.</p>
+    </div>
+
+    <div class="grid g3">
+      <article class="card" data-anim>
+        <span class="num">Durante el día</span>
+        <h4>Tablero operativo</h4>
+        <ul class="ticks" style="margin-top:.8rem">
+          <li>Entradas vendidas hoy vs. mismo día de la semana pasada</li>
+          <li>Curva de ingreso por hora</li>
+          <li>Cuentas abiertas y monto expuesto</li>
+          <li>Mapa de mesas con montos</li>
+          <li>Pérdidas del día</li>
+          <li>Alertas de existencias bajas</li>
+        </ul>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">Control de costos</span>
+        <h4>A dónde se va el dinero</h4>
+        <ul class="ticks" style="margin-top:.8rem">
+          <li>Conciliación de unidades: lo que debería haber vs. lo que hay</li>
+          <li>Faltantes por artículo, ordenados por pesos</li>
+          <li>Pérdidas por motivo, turno y persona</li>
+          <li>Margen por producto</li>
+          <li>Evolución del precio de compra por proveedor</li>
+          <li>Rotación y días de inventario</li>
+        </ul>
+      </article>
+      <article class="card" data-anim>
+        <span class="num">Dirección</span>
+        <h4>Salud del negocio</h4>
+        <ul class="ticks" style="margin-top:.8rem">
+          <li>Ingreso, costo y gasto por mes</li>
+          <li>Gasto promedio por visitante</li>
+          <li>Composición del ingreso: entradas, bebidas, snacks</li>
+          <li>Punto de equilibrio en visitantes por día</li>
+          <li>Estacionalidad en calendario de calor</li>
+          <li>Flujo de caja y cuentas por pagar</li>
+        </ul>
+      </article>
+    </div>
+
+    <h3 style="margin-top:3rem" data-anim>Tres reportes que hoy no existen y cambian decisiones</h3>
+    <div class="tbl-wrap" style="margin-top:1rem" data-anim>
+      <table>
+        <thead><tr><th>Reporte</th><th>Qué muestra</th><th>Qué decisión permite</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Gasto por visitante</b></td>
+            <td>Cuánto consume en promedio cada persona que paga entrada, por día y por temporada.</td>
+            <td>Saber si conviene subir la entrada o bajarla para que entre más gente a consumir.</td>
+          </tr>
+          <tr>
+            <td><b>Ediciones y anulaciones por mesera</b></td>
+            <td>Cuántas líneas se modificaron o anularon después de haberse servido, con monto y persona.</td>
+            <td>Detectar el patrón antes de que se vuelva costumbre. No es un incidente, es una tendencia.</td>
+          </tr>
+          <tr>
+            <td><b>Conciliación de unidades</b></td>
+            <td>Inicial + compras − vendido − pérdidas contra el conteo físico, por artículo.</td>
+            <td>Cuadra exacto o hay un faltante concreto. Con producto cerrado no hay margen donde esconderse.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FASES ============ -->
+<section id="fases" class="alt">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Cómo se entrega</span>
+      <h2>Por fases, no todo de golpe</h2>
+      <p>El sistema es usable y útil al terminar la fase 2. Lo demás se agrega sobre algo que ya está funcionando y ya se está usando.</p>
+    </div>
+
+    <div class="grid g3">
+      <article class="phase" data-anim>
+        <span class="chip chip--f1">Fase 1 — Operación</span>
+        <h4>Vender y cobrar</h4>
+        <ul>
+          <li>Usuarios, permisos y catálogo</li>
+          <li>Taquilla y venta de entradas</li>
+          <li>Cuentas abiertas y edición de pedidos</li>
+          <li>Pantalla de la barra</li>
+          <li>Vista de cuenta para el cliente</li>
+          <li>Precios con ITBIS, descuentos, pagos</li>
+          <li>Turno de caja y cierre</li>
+        </ul>
+      </article>
+      <article class="phase phase--2" data-anim>
+        <span class="chip chip--f2">Fase 2 — Control</span>
+        <h4>Saber qué pasa</h4>
+        <ul>
+          <li>Inventario por unidad y conteo por turno</li>
+          <li>Registro de pérdidas</li>
+          <li>Compras y proveedores</li>
+          <li>División de cuenta por persona</li>
+          <li>Tablero operativo y de costos</li>
+        </ul>
+      </article>
+      <article class="phase phase--3" data-anim>
+        <span class="chip chip--f3">Fase 3 — Crecimiento</span>
+        <h4>Afinar y ampliar</h4>
+        <ul>
+          <li>Clientes reconocidos y preferencias</li>
+          <li>Empleados, asistencia y propinas</li>
+          <li>Contabilidad y centros de costo</li>
+          <li>Hookah</li>
+          <li>QR en las mesas</li>
+          <li>Modo sin internet</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="grid g2" style="margin-top:1.5rem">
+      <div class="blank" data-anim>
+        <span class="mono">Por completar — Tiempos</span>
+        <p>Duración estimada de cada fase y fechas de entrega. Definir junto con el cliente según disponibilidad y temporada.</p>
+      </div>
+      <div class="blank" data-anim>
+        <span class="mono">Por completar — Inversión</span>
+        <p>Monto por fase, forma de pago y qué costos recurrentes quedan a cargo del negocio (servidor, dominio, facturación electrónica).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ALCANCE ============ -->
+<section id="alcance">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Para evitar malentendidos</span>
+      <h2>Qué incluye y qué no</h2>
+      <p>Esta lista es tan importante como la de funcionalidades. Todo lo que no aparece a la izquierda se cotiza aparte.</p>
+    </div>
+
+    <div class="grid g2">
+      <div data-anim>
+        <h3 style="margin-bottom:1rem">Incluido</h3>
+        <ul class="ticks">
+          <li>Todas las pantallas y módulos de las fases contratadas</li>
+          <li>Carga inicial del catálogo de productos y precios desde Excel</li>
+          <li>Capacitación al personal antes de arrancar</li>
+          <li>Respaldos automáticos diarios</li>
+          <li>Acompañamiento durante los primeros [X] días de operación</li>
+          <li>Emisión de comprobantes fiscales a través de un proveedor certificado por la DGII</li>
+        </ul>
+      </div>
+      <div data-anim>
+        <h3 style="margin-bottom:1rem">No incluido</h3>
+        <ul class="ticks no">
+          <li>Equipos: tabletas, pantalla de barra, impresoras, red wifi</li>
+          <li>Certificado digital y mensualidad del proveedor de facturación electrónica</li>
+          <li>Costos de servidor, dominio y servicios en la nube</li>
+          <li>Integración directa con el POS de tarjetas del banco</li>
+          <li>Soporte fuera del período acordado</li>
+          <li>Funcionalidades nuevas que surjan después de aprobado el alcance</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" data-anim>
+      <h4>Dos aclaraciones que conviene dejar por escrito</h4>
+      <p>El certificado digital y el contrato con el proveedor de facturación electrónica van a nombre de la empresa, no del desarrollador. Y la responsabilidad fiscal ante la DGII es siempre del contribuyente: el sistema emite lo que la ley exige, pero no sustituye al contador.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TECNICO ============ -->
+<section id="tecnico" class="alt">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Cómo está construido</span>
+      <h2>Notas técnicas</h2>
+    </div>
+    <div class="tbl-wrap" data-anim>
+      <table>
+        <thead><tr><th>Aspecto</th><th>Decisión</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td><b>Base de datos</b></td><td>PostgreSQL sobre Supabase</td><td>Los pedidos aparecen en la pantalla de la barra al instante, sin recargar.</td></tr>
+          <tr><td><b>Aplicación</b></td><td>Web, funciona en tableta, celular y computadora</td><td>No hay que instalar nada. Un equipo dañado se reemplaza y se sigue trabajando.</td></tr>
+          <tr><td><b>Impresión</b></td><td>Agente local en el negocio</td><td>Las impresoras de tickets no se controlan desde la nube; hace falta un equipo en sitio.</td></tr>
+          <tr><td><b>Facturación</b></td><td>Proveedor certificado por la DGII</td><td>Evita meses de certificación propia y traslada el riesgo regulatorio a quien ya lo resolvió.</td></tr>
+          <tr><td><b>Sin internet</b></td><td>Modo degradado en fase 3</td><td>Es la parte más compleja del proyecto. Se construye cuando el resto ya esté estable.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROXIMOS PASOS ============ -->
+<section id="pasos" class="dark tiles">
+  <div class="wrap">
+    <div class="shead" data-anim>
+      <span class="eyebrow">Siguiente</span>
+      <h2>Para arrancar hacen falta cuatro respuestas</h2>
+    </div>
+    <div class="grid g2">
+      <article class="card" data-anim style="background:rgba(69,196,201,.07);border-color:rgba(69,196,201,.28)">
+        <span class="num" style="color:var(--aqua)">01</span>
+        <h4>¿Se guardan botellas a medio consumir?</h4>
+        <p style="color:#A8C3C8">Si el cliente deja una botella para la próxima visita, esa botella deja de ser inventario vendible y pasa a ser una obligación con él. Necesita su propio control.</p>
+      </article>
+      <article class="card" data-anim style="background:rgba(69,196,201,.07);border-color:rgba(69,196,201,.28)">
+        <span class="num" style="color:var(--aqua)">02</span>
+        <h4>¿Cómo funciona el servicio de hookah?</h4>
+        <p style="color:#A8C3C8">Qué se cobra, qué se consume por cada una, si se alquila o se vende, y cuánto tarda en prepararse.</p>
+      </article>
+      <article class="card" data-anim style="background:rgba(69,196,201,.07);border-color:rgba(69,196,201,.28)">
+        <span class="num" style="color:var(--aqua)">03</span>
+        <h4>¿Qué usan hoy y qué es lo que no les funciona?</h4>
+        <p style="color:#A8C3C8">Define qué se migra, qué se descarta y por dónde conviene empezar.</p>
+      </article>
+      <article class="card" data-anim style="background:rgba(69,196,201,.07);border-color:rgba(69,196,201,.28)">
+        <span class="num" style="color:var(--aqua)">04</span>
+        <h4>¿Cuántas meseras y cuántos puntos de cobro?</h4>
+        <p style="color:#A8C3C8">Determina cuántos equipos hacen falta y cómo se organiza el cierre de caja.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <span class="mono">Propuesta preparada por</span>
+      <h3 style="margin:.5rem 0 .6rem">Oscar Núñez | ODTeam-X</h3>
+      <p>849-430-3008 · oscarnunez.contacto@gmail.com</p>
+    </div>
+    <p>Documento de propuesta. Los alcances, tiempos y montos quedan sujetos a acuerdo escrito antes de iniciar el desarrollo.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- reveal on scroll ----
+  const els = document.querySelectorAll('[data-anim]');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: .08, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => io.observe(el));
+  } else {
+    els.forEach(el => el.classList.add('in'));
+  }
+
+  // ---- nav active state ----
+  const links = [...document.querySelectorAll('.nav__links a')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  if ('IntersectionObserver' in window && secs.length) {
+    const nav = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        links.forEach(l => l.classList.toggle('on', l.getAttribute('href') === '#' + e.target.id));
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    secs.forEach(s => nav.observe(s));
+  }
+
+  // ---- tabs del recorrido ----
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const show = (tab) => {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => show(t));
+    t.addEventListener('keydown', (ev) => {
+      const map = { ArrowRight: 1, ArrowLeft: -1 };
+      if (!(ev.key in map)) return;
+      ev.preventDefault();
+      const next = tabs[(i + map[ev.key] + tabs.length) % tabs.length];
+      next.focus(); show(next);
+    });
+  });
+
+  // ---- calculadora ----
+  const ITBIS = 0.18, PROPINA = 0.10;
+  const $ = id => document.getElementById(id);
+  const money = n => 'RD$ ' + n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+  let modo = 'pct';
+
+  const setModo = (m) => {
+    modo = m;
+    $('mPct').setAttribute('aria-pressed', m === 'pct');
+    $('mMonto').setAttribute('aria-pressed', m === 'monto');
+    $('lblDesc').textContent = m === 'pct' ? 'Descuento en %' : 'Descuento en RD$';
+    $('desc').value = 0;
+    calc();
+  };
+  $('mPct').addEventListener('click', () => setModo('pct'));
+  $('mMonto').addEventListener('click', () => setModo('monto'));
+
+  function calc() {
+    const precio = Math.max(0, parseFloat($('precio').value) || 0);
+    const cant = Math.max(1, parseInt($('cant').value) || 1);
+    const conProp = $('prop').checked;
+    const d = Math.max(0, parseFloat($('desc').value) || 0);
+
+    // el precio de carta incluye ITBIS; la propina se suma aparte
+    const brutoConItbis = r2(precio * cant);
+    const baseBruta = r2(brutoConItbis / (1 + ITBIS));
+    const propBruta = conProp ? r2(baseBruta * PROPINA) : 0;
+    const totalSinDesc = r2(brutoConItbis + propBruta);
+
+    // el factor traduce "pesos que el cliente deja de pagar" a "pesos de base"
+    const factor = 1 + ITBIS + (conProp ? PROPINA : 0);
+
+    let descBase = 0, equiv = '—';
+    if (d > 0 && baseBruta > 0) {
+      if (modo === 'pct') {
+        const pct = Math.min(d, 100);
+        descBase = r2(baseBruta * pct / 100);
+        equiv = money(r2(descBase * factor)) + ' menos para el cliente';
+      } else {
+        const tope = r2(baseBruta * factor);
+        const monto = Math.min(d, tope);
+        descBase = r2(monto / factor);
+        equiv = (r2(descBase / baseBruta * 100)).toFixed(2) + ' % sobre el consumo';
+      }
+    }
+
+    const baseNeta = r2(baseBruta - descBase);
+    const itbis = r2(baseNeta * ITBIS);
+    const propina = conProp ? r2(baseNeta * PROPINA) : 0;
+    const total = r2(baseNeta + itbis + propina);
+    const ahorro = r2(totalSinDesc - total);
+
+    $('oBruto').textContent = money(brutoConItbis);
+    $('oDesc').textContent = descBase > 0 ? '− ' + money(r2(descBase * factor)) : money(0);
+    $('oEquiv').textContent = equiv;
+    $('oBase').textContent = money(baseNeta);
+    $('oItbis').textContent = money(itbis);
+    $('oProp').textContent = conProp ? money(propina) : 'No aplica';
+    $('oTotal').textContent = money(total);
+
+    $('oNota').textContent = descBase > 0
+      ? 'El cliente paga ' + money(ahorro) + ' menos que sin descuento. El sistema guarda el porcentaje y el monto a la vez, junto con quién lo autorizó y por qué.'
+      : 'El precio de carta se escribe tal cual (' + money(precio) + '). El sistema deduce el ITBIS por dentro y el ticket cuadra al centavo.';
+  }
+
+  ['precio', 'cant', 'desc'].forEach(id => $(id).addEventListener('input', calc));
+  $('prop').addEventListener('change', calc);
+  calc();
+})();
+</script>
+</body>
+</html>
